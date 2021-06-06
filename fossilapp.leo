@@ -10,17 +10,44 @@
 <v t="yen.20210606091617.2"><vh>@data qt-gui-plugin-style-sheet</vh></v>
 <v t="yen.20210606091617.3"><vh>@string initial_split_orientation = horizontal</vh></v>
 </v>
+<v t="yen.20210607012830.1"><vh>About</vh>
+<v t="yen.20210607012835.1"><vh>generate self-signed certificate</vh></v>
+<v t="yen.20210607014414.1"><vh>Oauth2</vh></v>
+<v t="yen.20210607012905.1"><vh>oauth2 for @gm user</vh>
+<v t="yen.20210607012905.2"><vh>oauth2 使用 authomatic</vh>
+<v t="yen.20210607012905.3"><vh>google 設定</vh></v>
+<v t="yen.20210607012905.4"><vh>啟用步驟</vh></v>
+</v>
+<v t="yen.20210607012905.5"><vh>read client id and secret from file</vh></v>
+<v t="yen.20210607012905.6"><vh>generate secret id for Flask</vh></v>
+<v t="yen.20210607012905.7"><vh>Google logout and redirect</vh></v>
+</v>
+</v>
 <v t="yen.20210606100250.1"><vh>@edit README.md</vh></v>
 <v t="yen.20210606100130.1"><vh>@edit .gitignore</vh></v>
 <v t="yen.20210606100214.1"><vh>@edit LICENSE</vh></v>
+<v t="yen.20210607011849.1"><vh>@edit config.py</vh></v>
 <v t="yen.20210606091602.2"><vh>@clean fossilapp.py</vh>
 <v t="yen.20210606091714.1"><vh>Declarations (fossilapp.py)</vh></v>
+<v t="yen.20210607012220.1"><vh>login_required</vh></v>
+<v t="yen.20210607012641.1"><vh>index</vh></v>
+<v t="yen.20210607012249.1"><vh>menu</vh></v>
+<v t="yen.20210607011540.1"><vh>alogin</vh></v>
+<v t="yen.20210607011234.1"><vh>login</vh></v>
+<v t="yen.20210607011601.1"><vh>logout</vh></v>
 <v t="yen.20210606091714.2"><vh>hello (fossilapp.py)</vh></v>
 <v t="yen.20210606092715.1"><vh>form</vh></v>
 <v t="yen.20210606092616.1"><vh>genAccount</vh></v>
 </v>
 <v t="yen.20210606091717.1"><vh>@clean wsgi.py</vh>
 <v t="yen.20210606091727.1"><vh>Declarations (wsgi.py)</vh></v>
+</v>
+<v t="yen.20210607011406.1"><vh>@path templates</vh>
+<v t="yen.20210607012542.1"><vh>@edit base.html</vh></v>
+<v t="yen.20210607012704.1"><vh>@edit index.html</vh></v>
+<v t="yen.20210607011512.1"><vh>@edit alogin.html</vh></v>
+<v t="yen.20210607011415.1"><vh>@edit login.html</vh></v>
+<v t="yen.20210607012337.1"><vh>@edit menu.html</vh></v>
 </v>
 </vnodes>
 <tnodes>
@@ -124,11 +151,37 @@ QLineEdit#editorLabel {
 }</t>
 <t tx="yen.20210606091617.3">horizontal: body pane to the left
 vertical: body pane on the botton</t>
-<t tx="yen.20210606091714.1">from flask import Flask, request
+<t tx="yen.20210606091714.1">#from flask import Flask, request
+# import from flask
+from flask import Flask, request, redirect, url_for, flash, \
+                render_template, session, make_response
+                           
+# for authomatic
+from authomatic.adapters import WerkzeugAdapter
+from authomatic import Authomatic
+
+# from config.py 導入 CONFIG and CALLBACK_URL
+from config import CONFIG
+from config import CALLBACK_URL
 
 # for generating secret_key
 import os
 import time
+
+# for mako template engine
+# for mako template 系統
+from mako.template import Template
+from mako.lookup import TemplateLookup
+
+# for login_required
+from functools import wraps
+
+# Instantiate Authomatic.
+authomatic = Authomatic(CONFIG, 'A0Zr9@8j/3yX R~XHH!jmN]LWX/,?R@T', report_errors=False)
+
+# 確定程式檔案所在目錄, 在 Windows 有最後的反斜線
+_curdir = os.path.join(os.getcwd(), os.path.dirname(__file__))
+template_root_dir = _curdir + "/templates"
 
 app = Flask(__name__)
 
@@ -139,7 +192,8 @@ secret_key = os.urandom(24).hex()
 app.secret_key = secret_key
 
 </t>
-<t tx="yen.20210606091714.2">@app.route("/")
+<t tx="yen.20210606091714.2">@app.route("/hello")
+@login_required
 def hello():
     return "&lt;h1 style='color:blue'&gt;Hello There!&lt;/h1&gt;"
 
@@ -165,6 +219,7 @@ application = fossilapp.app
 
 </t>
 <t tx="yen.20210606092616.1">@app.route('/genAccount', methods=['POST'])
+@login_required
 def genAccount():
 
     """Generate Fossil SCM account
@@ -250,13 +305,17 @@ def genAccount():
     # return command for debug
     #return output
     
-    return "account: " + account + " created!"
+    return "account: " + account + " created!&lt;br /&gt;" + \
+    "&lt;a href='https://fossil.kmol.info/u/" +account + "'&gt;" + \
+    account + "&lt;/a&gt;"
+
     
     '''
     return "account:" + account+"&lt;br /&gt;" \
     + "password:" + password
     '''</t>
 <t tx="yen.20210606092715.1">@app.route('/form')
+@login_required
 def form():
     """Create form routine"""
     
@@ -268,5 +327,331 @@ def form():
     
     
 </t>
+<t tx="yen.20210607011234.1">@app.route('/login/&lt;provider_name&gt;/', methods=['GET', 'POST'])
+def login(provider_name):
+    
+    # We need response object for the WerkzeugAdapter.
+    response = make_response()
+    
+    # Log the user in, pass it the adapter and the provider name.
+    result = authomatic.login(WerkzeugAdapter(request, response), provider_name)
+    
+    # If there is no LoginResult object, the login procedure is still pending.
+    if result:
+        if result.user:
+            # We need to update the user to get more info.
+            result.user.update()
+        
+        # use session to save login user's email (試著將 @ 換為 _at_)
+        #session['loginEmail'] = result.user.email.replace('@', '_at_')
+        '''
+        loginUser = result.user.email.split("@")[0]
+        session["user"] = loginUser
+        session["login"] = True
+        template_lookup =
+        '''
+        # only get the string before @
+        loginUser = result.user.email.split("@")[0]
+        loginDomain = result.user.email.split("@")[1]
+        
+        # only kmoler can login
+        #kmoler = ["scrum2"]
+        #if loginUser in kmoler:
+        
+        # only @gm.nfu.edu.tw can login
+        if loginDomain == "gm.nfu.edu.tw":
+            session["user"] = loginUser
+            session["login"] = True
+            template_lookup = TemplateLookup(directories=[template_root_dir])
+            loginTemplate = template_lookup.get_template("login.html")
+            
+            return loginTemplate.render(result=result, CALLBACK_URL=CALLBACK_URL)
+        else:
+            return "Sorry, you are not allowed to login."
+
+    # Don't forget to return the response.
+    return response
+</t>
+<t tx="yen.20210607011406.1"></t>
+<t tx="yen.20210607011540.1">@app.route('/alogin' , methods=['GET' , 'POST'])
+def alogin():
+    error = None
+    if request.method == 'POST':
+        if request.form['username'] != "fossil":
+            error = '錯誤!'
+        elif request.form['password'] != "fossil":
+            error = '錯誤!'
+        else :
+            session['login'] = True
+            session['user'] = "alogin"
+            flash('已經登入!')
+            return redirect(url_for('menu'))
+    # jinja template
+    #return render_template('alogin.html' , error=error)
+    # mako template
+    template_lookup = TemplateLookup(directories=[template_root_dir])
+    aloginTemplate = template_lookup.get_template("alogin.html")
+    return aloginTemplate.render(error=error)
+</t>
+<t tx="yen.20210607011601.1">@app.route('/logout')
+def logout():
+    session.pop('login' , None)
+    session.pop('user', None)
+    flash('Logged out!')
+    return redirect(url_for('index'))</t>
+<t tx="yen.20210607012220.1">def login_required(f):
+    @wraps(f)
+    def wrap(*args, **kwargs):
+        if 'login' in session:
+            return f(*args, **kwargs)
+        else:
+            flash("You need to login first")
+            return redirect(url_for('index'))
+
+    return wrap</t>
+<t tx="yen.20210607012249.1">@app.route("/menu")
+@login_required
+def menu():
+    menuList = ["form"]
+    template_lookup = TemplateLookup(directories=[template_root_dir])
+    menuTemplate = template_lookup.get_template("menu.html")
+    return menuTemplate.render(menuList=menuList)</t>
+<t tx="yen.20210607012641.1">@app.route('/')
+# root of the system can not set "login_required" decorator
+# 開始改用 Make 作為 Template
+def index():
+    template_lookup = TemplateLookup(directories=[template_root_dir])
+    indexTemplate = template_lookup.get_template("index.html")
+    return indexTemplate.render()
+</t>
+<t tx="yen.20210607012830.1"></t>
+<t tx="yen.20210607012835.1">Location of openssl from https://www.msys2.org/
+
+y:\msys64\mingw64\bin\openssl.exe
+
+openssl req -x509 -nodes -days 600 -newkey rsa:2048 -keyout cd2020.key -out cd2020.crt</t>
+<t tx="yen.20210607012905.1">Setup URL
+
+https://console.developers.google.com
+
+First setup, the welcome popup:
+
+    Welcome, KMOLab!
+    
+    Create and manage your Google Cloud Platform instances, disks, networks and other resources in one place.
+    
+    need to agree the Terms of Service.
+    
+You have 12 projects remaining in your quota. 
+
+----
+Enable Google + Domain API
+
+Go to credentials
+
+Remember to configure the OAuth consent screen with information about your application.
+
+----
+OAuth consent screen
+
+Choose how you want to configure and register your app, including your target users. You can only associate one app with your project.
+
+User type:
+
+choose internal: only allow @gm user to login
+
+Press Create
+----
+Create OAuth client ID
+
+Application type: Web application</t>
+<t tx="yen.20210607012905.2">http://peterhudec.github.io/authomatic/</t>
+<t tx="yen.20210607012905.3">config.py
+
+from authomatic.providers import oauth2
+
+CONFIG = {
+        'google': {
+            'class_': oauth2.Google,
+            'consumer_key': '##########',
+            'consumer_secret': '##########',
+            'id': authomatic.provider_id(),
+            'scope': oauth2.Google.user_info_scope
+        }
+    }
+    '''
+        'scope': ['https://www.googleapis.com/auth/userinfo.profile',
+        'https://www.googleapis.com/auth/userinfo.email']
+    '''
+
+main.py
+
+from flask import Flask, render_template, request, make_response
+from authomatic.adapters import WerkzeugAdapter
+from authomatic import Authomatic
+
+from config import CONFIG
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+    
+@app.route('/login/&lt;provider_name&gt;/', methods=['GET', 'POST'])
+def login(provider_name):
+    response = make_response()
+    result = authomatic.login(WerkzeugAdapter(request, response), provider_name)
+    
+    # You need to set a secret string otherwise the session will not work.
+app.secret_key = 'random secret string'
+
+    result = authomatic.login(
+    WerkzeugAdapter(request, response),
+    provider_name,
+    session=session,
+    session_saver=lambda: app.save_session(session, response)
+    )
+    if result:
+        if result.user:
+            result.user.update()
+        return render_template('login.html', result=result)
+    return response
+    
+{# base.html #}
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+    &lt;head&gt;
+        &lt;title&gt;Authomatic Flask Example&lt;/title&gt;
+    &lt;/head&gt;
+    &lt;body&gt;
+        {% block body %}{% endblock %}
+    &lt;/body&gt;
+&lt;/html&gt;
+
+{# index.html #}
+{% extends "base.html" %}
+{% block body %}
+
+    &lt;!--Links to the login handler--&gt;
+    Login with &lt;a href="login/fb"&gt;Facebook&lt;/a&gt;.&lt;br /&gt;
+    Login with &lt;a href="login/tw"&gt;Twitter&lt;/a&gt;.&lt;br /&gt;
+    
+    &lt;!--OpenID form--&gt;
+    &lt;form action="login/oi"&gt;
+        &lt;input type="text" name="id" value="me.yahoo.com" /&gt;
+        &lt;input type="submit" value="Authenticate With OpenID"&gt;
+    &lt;/form&gt;
+
+{% endblock %}
+
+{# login.html #}
+{% extends "base.html" %}
+{% block body %}
+    &lt;a href="/"&gt;Home&lt;/a&gt;
+    
+    {% if result.error %}
+        &lt;h2&gt;Damn that error: {{ result.error.message }}&lt;/h2&gt;
+    {% endif %} 
+    
+    {% if result.user %}
+        &lt;h1&gt;Hi {{ result.user.name }}&lt;/h1&gt;
+        &lt;h2&gt;Your id is: {{ result.user.id }}&lt;/h2&gt;
+        &lt;h2&gt;Your email is: {{ result.user.email }}&lt;/h2&gt;
+    {% endif %}
+    
+    {% if result.user.credentials %}
+            {% if result.provider.name == 'fb' %}
+            Your are logged in with Facebook.&lt;br /&gt;
+            {% set url = 'https://graph.facebook.com/{0}?fields=feed.limit(5)'.format(result.user.id) %}
+            {% set response = result.provider.access(url) %}
+            {% if response.status == 200 %}
+            {% if response.data.error %}
+                Damn that error: {{ response.data.error }}!
+            {% endif %}
+             {% if response.data.feed.data %}
+                Your 5 most recent statuses:&lt;br /&gt;
+                {% for status in response.data.feed.data %}
+                    &lt;h3&gt;{{ status.message or status.name or status.story }}&lt;/h3&gt;
+                    Posted on: {{ status.created_time }}
+                {% endfor %}
+            {% endif %}
+                {% endif %}{# response.status == 200 #}
+            {% endif %}{# result.provider.name == 'fb' #}
+</t>
+<t tx="yen.20210607012905.4">
+設定網址:
+
+https://console.developers.google.com
+
+總共有兩項設定:
+
+1. 啟用 Google + API
+
+2. 然後到憑證處建立專案, 設定授權的 URI
+
+然後 config.py 部份:
+
+##############################################
+
+import authomatic
+from authomatic.providers import oauth2
+
+CONFIG = {
+        'google': {
+            'class_': oauth2.Google,
+            'consumer_key': '#######',
+            'consumer_secret': '#######',
+            'scope': oauth2.Google.user_info_scope
+        }
+    }
+    
+###############################################
+
+# 接著為 login 部份
+
+@app.route('/autho_login/&lt;provider_name&gt;/', methods=['GET', 'POST'])
+def autho_login(provider_name):
+    
+    # We need response object for the WerkzeugAdapter.
+    response = make_response()
+    
+    # Log the user in, pass it the adapter and the provider name.
+    result = authomatic.login(WerkzeugAdapter(request, response), provider_name)
+    
+    # If there is no LoginResult object, the login procedure is still pending.
+    if result:
+        if result.user:
+            # We need to update the user to get more info.
+            result.user.update()
+        
+        # The rest happens inside the template.
+        return render_template('autho_login.html', user_name=result.user.name, user_id=result.user.id, user_email=result.user.email, result=result)
+    
+    # Don't forget to return the response.
+    return response</t>
+<t tx="yen.20210607012905.5">@language python
+
+keyFile = open('./../oauth_gm.txt', 'r')
+with open('./../oauth_gm.txt', 'r') as f:
+    key = f.read().splitlines()
+g.es(key)</t>
+<t tx="yen.20210607012905.6">@language python
+# Windows use Ctrl + b to execute under Leo Editor node
+# Mac use Command +b to execute
+# app.secret_key = 'A0Zr9@8j/3yX R~XHH!jmN]LWX/,?R@T'
+# this key is to keep the session safe
+import secrets
+
+g.es(secrets.token_urlsafe(24))
+
+# 6Xpn4BDO5b1t39dNcPH6PAWTlQaD4B8X
+# c8aDEUckVQnZ8nwkAgGSk3nvS_beJYkL
+# WFUABb_IPfxvdZgaih4Lecik4giKBtTd</t>
+<t tx="yen.20210607012905.7">https://stackoverflow.com/questions/4202161/google-account-logout-and-redirect
+
+https://www.google.com/accounts/Logout?continue=https://appengine.google.com/_ah/logout?continue=https://localhost:8443/guess
+
+When user login with Gmail account, user email is saved into session and logout from Gmail by using javascript and redirect to https://localhost:8443/guess</t>
+<t tx="yen.20210607014414.1">Use scrum2 at mde to get the json file
+scrum2_client_secret.txt</t>
 </tnodes>
 </leo_file>
