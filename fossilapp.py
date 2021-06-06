@@ -36,6 +36,17 @@ def genAccount():
     account = request.form["account"]
     password = request.form["password"]
     
+    # To avoid shell command injection, accept only numbers for Account
+    if account.isdigit():
+        pass
+    else:
+        return "Accept only numbers for Account!"
+    
+    # To avoid shell command injection, no special characters allowed for Password
+    for i in range(len(password)):
+        if password[i] in ["&", "|", ";", "$",">", "<", "`", "\\","!"]:
+            return "No special characters allowed for Password!"
+    
     # repository location path
     path = "/home/yen/repository/u/"
     
