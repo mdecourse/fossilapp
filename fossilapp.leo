@@ -32,7 +32,6 @@
 <v t="yen.20210607012220.1"><vh>login_required</vh></v>
 <v t="yen.20210607012641.1"><vh>index</vh></v>
 <v t="yen.20210607012249.1"><vh>menu</vh></v>
-<v t="yen.20210607011540.1"><vh>alogin</vh></v>
 <v t="yen.20210607011234.1"><vh>login</vh></v>
 <v t="yen.20210607011601.1"><vh>logout</vh></v>
 <v t="yen.20210606091714.2"><vh>hello (fossilapp.py)</vh></v>
@@ -177,7 +176,9 @@ from mako.lookup import TemplateLookup
 from functools import wraps
 
 # Instantiate Authomatic.
-authomatic = Authomatic(CONFIG, 'A0Zr9@8j/3yX R~XHH!jmN]LWX/,?R@T', report_errors=False)
+# generate secret string randomly
+secret = os.urandom(24).hex()
+authomatic = Authomatic(CONFIG, secret, report_errors=False)
 
 # 確定程式檔案所在目錄, 在 Windows 有最後的反斜線
 _curdir = os.path.join(os.getcwd(), os.path.dirname(__file__))
@@ -225,14 +226,20 @@ def genAccount():
     """Generate Fossil SCM account
     """
     # get user input account and password
-    account = request.form["account"]
+    #account = request.form["account"]
+    # get user student number from session
+    loginUser = session.get('user')
+    account = loginUser
     password = request.form["password"]
     
     # To avoid shell command injection, accept only numbers for Account
+    '''
+    # get user account from session
     if account.isdigit():
         pass
     else:
         return "Accept only numbers for Account!"
+    '''
     
     # To avoid shell command injection, no special characters allowed for Password
     for i in range(len(password)):
@@ -305,8 +312,8 @@ def genAccount():
     # return command for debug
     #return output
     
-    return "account: " + account + " created!&lt;br /&gt;" + \
-    "&lt;a href='https://fossil.kmol.info/u/" +account + "'&gt;" + \
+    return "Repository: " + account + " created!&lt;br /&gt;&lt;br \&gt;" + \
+    "Link to repository: &lt;a href='https://fossil.kmol.info/u/" +account + "'&gt;" + \
     account + "&lt;/a&gt;"
 
     
@@ -319,11 +326,16 @@ def genAccount():
 def form():
     """Create form routine"""
     
-    return "&lt;html&gt;&lt;body&gt;&lt;h1&gt;Create Fossil SCM Repository&lt;/h1&gt;&lt;form method='post' action='genAccount'&gt; \
-     Account:&lt;input type='text' name='account'&gt;&lt;br \&gt; \
-     Password:&lt;input type='password' name='password'&gt;&lt;br \&gt; \
-    &lt;input type='submit' value='genAccount'&gt;&lt;/form&gt; \
-    &lt;/section&gt;&lt;/div&gt;&lt;/body&gt;&lt;/html&gt;"
+    # get user student number from session
+    loginUser = session.get('user')
+    
+    output = "&lt;html&gt;&lt;body&gt;&lt;h1&gt;Create Fossil SCM Repository&lt;/h1&gt;&lt;form method='post' action='genAccount'&gt;"
+    output += "Please set the password for your Fossil SCM repository: "
+    output += loginUser + "&lt;br \&gt;&lt;br \&gt;"
+    output += "Password:&lt;input type='password' name='password'&gt;&lt;br \&gt;&lt;br \&gt; "
+    output += "&lt;input type='submit' value='Create Repository'&gt;&lt;/form&gt;&lt;/section&gt;&lt;/div&gt;&lt;/body&gt;&lt;/html&gt;"
+    
+    return output
     
     
 </t>
@@ -373,26 +385,6 @@ def login(provider_name):
     return response
 </t>
 <t tx="yen.20210607011406.1"></t>
-<t tx="yen.20210607011540.1">@app.route('/alogin' , methods=['GET' , 'POST'])
-def alogin():
-    error = None
-    if request.method == 'POST':
-        if request.form['username'] != "fossil":
-            error = '錯誤!'
-        elif request.form['password'] != "fossil":
-            error = '錯誤!'
-        else :
-            session['login'] = True
-            session['user'] = "alogin"
-            flash('已經登入!')
-            return redirect(url_for('menu'))
-    # jinja template
-    #return render_template('alogin.html' , error=error)
-    # mako template
-    template_lookup = TemplateLookup(directories=[template_root_dir])
-    aloginTemplate = template_lookup.get_template("alogin.html")
-    return aloginTemplate.render(error=error)
-</t>
 <t tx="yen.20210607011601.1">@app.route('/logout')
 def logout():
     session.pop('login' , None)
@@ -637,21 +629,22 @@ g.es(key)</t>
 <t tx="yen.20210607012905.6">@language python
 # Windows use Ctrl + b to execute under Leo Editor node
 # Mac use Command +b to execute
-# app.secret_key = 'A0Zr9@8j/3yX R~XHH!jmN]LWX/,?R@T'
 # this key is to keep the session safe
 import secrets
 
 g.es(secrets.token_urlsafe(24))
-
-# 6Xpn4BDO5b1t39dNcPH6PAWTlQaD4B8X
-# c8aDEUckVQnZ8nwkAgGSk3nvS_beJYkL
-# WFUABb_IPfxvdZgaih4Lecik4giKBtTd</t>
+</t>
 <t tx="yen.20210607012905.7">https://stackoverflow.com/questions/4202161/google-account-logout-and-redirect
 
 https://www.google.com/accounts/Logout?continue=https://appengine.google.com/_ah/logout?continue=https://localhost:8443/guess
 
 When user login with Gmail account, user email is saved into session and logout from Gmail by using javascript and redirect to https://localhost:8443/guess</t>
 <t tx="yen.20210607014414.1">Use scrum2 at mde to get the json file
-scrum2_client_secret.txt</t>
+
+setup site: https://console.developers.google.com
+
+scrum2_client_secret.txt has two lines:
+the first line is client key
+the second line is client secret</t>
 </tnodes>
 </leo_file>

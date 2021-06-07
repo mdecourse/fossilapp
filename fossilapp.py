@@ -24,7 +24,9 @@ from mako.lookup import TemplateLookup
 from functools import wraps
 
 # Instantiate Authomatic.
-authomatic = Authomatic(CONFIG, 'A0Zr9@8j/3yX R~XHH!jmN]LWX/,?R@T', report_errors=False)
+# generate secret string randomly
+secret = os.urandom(24).hex()
+authomatic = Authomatic(CONFIG, secret, report_errors=False)
 
 # 確定程式檔案所在目錄, 在 Windows 有最後的反斜線
 _curdir = os.path.join(os.getcwd(), os.path.dirname(__file__))
@@ -62,25 +64,6 @@ def menu():
     template_lookup = TemplateLookup(directories=[template_root_dir])
     menuTemplate = template_lookup.get_template("menu.html")
     return menuTemplate.render(menuList=menuList)
-@app.route('/alogin' , methods=['GET' , 'POST'])
-def alogin():
-    error = None
-    if request.method == 'POST':
-        if request.form['username'] != "fossil":
-            error = '錯誤!'
-        elif request.form['password'] != "fossil":
-            error = '錯誤!'
-        else :
-            session['login'] = True
-            session['user'] = "alogin"
-            flash('已經登入!')
-            return redirect(url_for('menu'))
-    # jinja template
-    #return render_template('alogin.html' , error=error)
-    # mako template
-    template_lookup = TemplateLookup(directories=[template_root_dir])
-    aloginTemplate = template_lookup.get_template("alogin.html")
-    return aloginTemplate.render(error=error)
 @app.route('/login/<provider_name>/', methods=['GET', 'POST'])
 def login(provider_name):
     
@@ -141,11 +124,16 @@ def hello():
 def form():
     """Create form routine"""
     
-    return "<html><body><h1>Create Fossil SCM Repository</h1><form method='post' action='genAccount'> \
-     Account:<input type='text' name='account'><br \> \
-     Password:<input type='password' name='password'><br \> \
-    <input type='submit' value='genAccount'></form> \
-    </section></div></body></html>"
+    # get user student number from session
+    loginUser = session.get('user')
+    
+    output = "<html><body><h1>Create Fossil SCM Repository</h1><form method='post' action='genAccount'>"
+    output += "Please set the password for your Fossil SCM repository: "
+    output += loginUser + "<br \><br \>"
+    output += "Password:<input type='password' name='password'><br \><br \> "
+    output += "<input type='submit' value='Create Repository'></form></section></div></body></html>"
+    
+    return output
     
     
 @app.route('/genAccount', methods=['POST'])
@@ -155,14 +143,20 @@ def genAccount():
     """Generate Fossil SCM account
     """
     # get user input account and password
-    account = request.form["account"]
+    #account = request.form["account"]
+    # get user student number from session
+    loginUser = session.get('user')
+    account = loginUser
     password = request.form["password"]
     
     # To avoid shell command injection, accept only numbers for Account
+    '''
+    # get user account from session
     if account.isdigit():
         pass
     else:
         return "Accept only numbers for Account!"
+    '''
     
     # To avoid shell command injection, no special characters allowed for Password
     for i in range(len(password)):
@@ -235,8 +229,8 @@ def genAccount():
     # return command for debug
     #return output
     
-    return "account: " + account + " created!<br />" + \
-    "<a href='https://fossil.kmol.info/u/" +account + "'>" + \
+    return "Repository: " + account + " created!<br /><br \>" + \
+    "Link to repository: <a href='https://fossil.kmol.info/u/" +account + "'>" + \
     account + "</a>"
 
     
