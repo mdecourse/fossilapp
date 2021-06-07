@@ -11,6 +11,11 @@
 <v t="yen.20210606091617.3"><vh>@string initial_split_orientation = horizontal</vh></v>
 </v>
 <v t="yen.20210607012830.1"><vh>About</vh>
+<v t="yen.20210607095902.1"><vh>wsgi service</vh>
+<v t="yen.20210607100050.1"><vh>@path fossil_template</vh>
+<v t="yen.20210607100102.1"><vh>@edit fossil_readme.txt</vh></v>
+</v>
+</v>
 <v t="yen.20210607012835.1"><vh>generate self-signed certificate</vh></v>
 <v t="yen.20210607014414.1"><vh>Oauth2</vh></v>
 <v t="yen.20210607012905.1"><vh>oauth2 for @gm user</vh>
@@ -231,6 +236,13 @@ def genAccount():
     loginUser = session.get('user')
     account = loginUser
     password = request.form["password"]
+    password2 = request.form["password2"]
+    
+    # Check if two password matched
+    if password != password2:
+        warning = "Passwords  do not match!&lt;br \&gt;"
+        warning += "Please go back and retype!"
+        return warning
     
     # To avoid shell command injection, accept only numbers for Account
     '''
@@ -333,6 +345,7 @@ def form():
     output += "Please set the password for your Fossil SCM repository: "
     output += loginUser + "&lt;br \&gt;&lt;br \&gt;"
     output += "Password:&lt;input type='password' name='password'&gt;&lt;br \&gt;&lt;br \&gt; "
+    output += "Retype Password:&lt;input type='password' name='password2'&gt;&lt;br \&gt;&lt;br \&gt; "
     output += "&lt;input type='submit' value='Create Repository'&gt;&lt;/form&gt;&lt;/section&gt;&lt;/div&gt;&lt;/body&gt;&lt;/html&gt;"
     
     return output
@@ -416,7 +429,9 @@ def index():
     indexTemplate = template_lookup.get_template("index.html")
     return indexTemplate.render()
 </t>
-<t tx="yen.20210607012830.1"></t>
+<t tx="yen.20210607012830.1">fossilapp web application
+
+sudo pip3 install flask authomatic mako</t>
 <t tx="yen.20210607012835.1">Location of openssl from https://www.msys2.org/
 
 y:\msys64\mingw64\bin\openssl.exe
@@ -646,5 +661,9 @@ setup site: https://console.developers.google.com
 scrum2_client_secret.txt has two lines:
 the first line is client key
 the second line is client secret</t>
+<t tx="yen.20210607095902.1">restart the wsgi service:
+
+sudo systemctl restart wsgi</t>
+<t tx="yen.20210607100050.1"></t>
 </tnodes>
 </leo_file>

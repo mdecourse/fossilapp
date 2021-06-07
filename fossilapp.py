@@ -131,6 +131,7 @@ def form():
     output += "Please set the password for your Fossil SCM repository: "
     output += loginUser + "<br \><br \>"
     output += "Password:<input type='password' name='password'><br \><br \> "
+    output += "Retype Password:<input type='password' name='password2'><br \><br \> "
     output += "<input type='submit' value='Create Repository'></form></section></div></body></html>"
     
     return output
@@ -148,6 +149,13 @@ def genAccount():
     loginUser = session.get('user')
     account = loginUser
     password = request.form["password"]
+    password2 = request.form["password2"]
+    
+    # Check if two password matched
+    if password != password2:
+        warning = "Passwords  do not match!<br \>"
+        warning += "Please go back and retype!"
+        return warning
     
     # To avoid shell command injection, accept only numbers for Account
     '''
