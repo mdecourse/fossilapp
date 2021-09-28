@@ -1,12 +1,12 @@
 import authomatic
 from authomatic.providers import oauth2
 
-CALLBACK_URL = "https://fossil.kmol.info:9443/menu"
+CALLBACK_URL = "https://cd04.kmol.info:8443/menu"
 
 # read client_id and client_secret from safe place other than put into script
 # current setting only allow @gm user login
-keyFile = open('./../scrum2_client_secret.txt', 'r')
-with open('./../scrum2_client_secret.txt', 'r') as f:
+keyFile = open('./../scrum1_client_secret.txt', 'r')
+with open('./../scrum1_client_secret.txt', 'r') as f:
     key = f.read().splitlines()
 
 CONFIG = {

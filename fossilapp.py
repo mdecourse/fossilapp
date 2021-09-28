@@ -96,15 +96,15 @@ def login(provider_name):
         #if loginUser in kmoler:
         
         # only @gm.nfu.edu.tw can login
-        if loginDomain == "gm.nfu.edu.tw":
-            session["user"] = loginUser
-            session["login"] = True
-            template_lookup = TemplateLookup(directories=[template_root_dir])
-            loginTemplate = template_lookup.get_template("login.html")
-            
-            return loginTemplate.render(result=result, CALLBACK_URL=CALLBACK_URL)
-        else:
-            return "Sorry, you are not allowed to login."
+        #if loginDomain == "gm.nfu.edu.tw":
+        session["user"] = loginUser
+        session["login"] = True
+        template_lookup = TemplateLookup(directories=[template_root_dir])
+        loginTemplate = template_lookup.get_template("login.html")
+
+        return loginTemplate.render(result=result, CALLBACK_URL=CALLBACK_URL)
+        #else:
+            #return "Sorry, you are not allowed to login."
 
     # Don't forget to return the response.
     return response

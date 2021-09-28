@@ -11,6 +11,8 @@
 <v t="yen.20210606091617.3"><vh>@string initial_split_orientation = horizontal</vh></v>
 </v>
 <v t="yen.20210607012830.1"><vh>About</vh>
+<v t="leo.20210928145955.1"><vh>for 34 test</vh></v>
+<v t="leo.20210928214455.1"><vh>under waitress</vh></v>
 <v t="yen.20210607095902.1"><vh>wsgi service</vh>
 <v t="yen.20210607100050.1"><vh>@path fossil_template</vh>
 <v t="yen.20210607100102.1"><vh>@edit fossil_readme.txt</vh></v>
@@ -32,6 +34,7 @@
 <v t="yen.20210606100130.1"><vh>@edit .gitignore</vh></v>
 <v t="yen.20210606100214.1"><vh>@edit LICENSE</vh></v>
 <v t="yen.20210607011849.1"><vh>@edit config.py</vh></v>
+<v t="leo.20210928214647.1"><vh>@edit waitress_server.py</vh></v>
 <v t="yen.20210606091602.2"><vh>@clean fossilapp.py</vh>
 <v t="yen.20210606091714.1"><vh>Declarations (fossilapp.py)</vh></v>
 <v t="yen.20210607012220.1"><vh>login_required</vh></v>
@@ -55,6 +58,28 @@
 </v>
 </vnodes>
 <tnodes>
+<t tx="leo.20210928145955.1">use scrum1 At mde
+
+setup site: https://console.developers.google.com
+
+for test only: use https://cd04.kmol.info:8443
+
+need DNS to set kmol dot info for production
+
+need to install authormatic and mako
+
+pip install authormatic
+
+pip install mako
+
+check templates/login.html content
+</t>
+<t tx="leo.20210928214455.1">https://github.com/Pylons/waitress/blob/36240c88b1c292d293de25fecaae1f1d0ad9cc22/docs/reverse-proxy.rst
+
+from waitress import serve
+serve(wsgiapp, listen='0.0.0.0:8080', url_scheme='https')
+
+same as in Ubuntu /etc/environment HTTPS=on</t>
 <t tx="yen.20210606091602.2">@others
 if __name__ == "__main__":
     app.run(host='0.0.0.0')
@@ -211,14 +236,14 @@ if __name__ == "__main__":
     if uwsgi:
         application = fossilapp.app
     else:
-        fossilapp.app.run()
+        fossilapp.app.run(ssl_context = 'adhoc', host='140.130.17.34', port=8443)
         
 @language python
 @tabwidth -4
 </t>
 <t tx="yen.20210606091727.1">import fossilapp
 
-uwsgi = True
+uwsgi = False
 
 application = fossilapp.app
 
@@ -384,15 +409,15 @@ def login(provider_name):
         #if loginUser in kmoler:
         
         # only @gm.nfu.edu.tw can login
-        if loginDomain == "gm.nfu.edu.tw":
-            session["user"] = loginUser
-            session["login"] = True
-            template_lookup = TemplateLookup(directories=[template_root_dir])
-            loginTemplate = template_lookup.get_template("login.html")
-            
-            return loginTemplate.render(result=result, CALLBACK_URL=CALLBACK_URL)
-        else:
-            return "Sorry, you are not allowed to login."
+        #if loginDomain == "gm.nfu.edu.tw":
+        session["user"] = loginUser
+        session["login"] = True
+        template_lookup = TemplateLookup(directories=[template_root_dir])
+        loginTemplate = template_lookup.get_template("login.html")
+
+        return loginTemplate.render(result=result, CALLBACK_URL=CALLBACK_URL)
+        #else:
+            #return "Sorry, you are not allowed to login."
 
     # Don't forget to return the response.
     return response
@@ -654,11 +679,11 @@ g.es(secrets.token_urlsafe(24))
 https://www.google.com/accounts/Logout?continue=https://appengine.google.com/_ah/logout?continue=https://localhost:8443/guess
 
 When user login with Gmail account, user email is saved into session and logout from Gmail by using javascript and redirect to https://localhost:8443/guess</t>
-<t tx="yen.20210607014414.1">Use scrum2 at mde to get the json file
+<t tx="yen.20210607014414.1">Use scrum1 at mde to get the json file
 
 setup site: https://console.developers.google.com
 
-scrum2_client_secret.txt has two lines:
+scrum1_client_secret.txt has two lines:
 the first line is client key
 the second line is client secret</t>
 <t tx="yen.20210607095902.1">restart the wsgi service:
