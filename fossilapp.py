@@ -140,6 +140,23 @@ def form():
     return output
     
     
+@app.route('/form2')
+@login_required
+def form2():
+    """Create form routine to replace existed repository"""
+    
+    # get user student number from session
+    loginUser = session.get('user')
+    
+    output = "<html><body><h1>Recreate Fossil SCM Repository</h1><form method='post' action='genAccount'>"
+    output += "Notice!! Your previous repository will be replaced! Please set the password for your new Fossil SCM repository: "
+    output += loginUser + "<br \><br \>"
+    output += "<input type='hidden' name='replaced' value='yes'>"
+    output += "Password:<input type='password' name='password'><br \><br \> "
+    output += "Retype Password:<input type='password' name='password2'><br \><br \> "
+    output += "<input type='submit' value='Create Repository'></form></section></div></body></html>"
+    
+    return output
 @app.route('/genAccount', methods=['POST'])
 @login_required
 def genAccount():
@@ -153,6 +170,10 @@ def genAccount():
     account = loginUser
     password = request.form["password"]
     password2 = request.form["password2"]
+    try:
+        replaced = request.form["replaced"]
+    except:
+        replaced = "No"
     
     # Check if two password matched
     if password != password2:
@@ -202,11 +223,15 @@ def genAccount():
     os.system("cd " + path)
     
     # execute command1
+    # check if repository exist
+    if replaced != "yes":
+        if os.path.exists(path + account + ".fossil"):
+            return "Error! 倉儲已經存在! <br /><br /> 假如要取代先前的倉儲, 請前往<a href='/form2'>建立新倉儲</a><br />"
     try:
         os.system(command1)
         output += "command1 completed <br />"
     except:
-        return "Error! 倉儲已經存在! <br />"
+        return "Error! can not create repository! <br />"
         
     
     # wait for 0.1 second

@@ -45,6 +45,7 @@
 <v t="yen.20210607011601.1"><vh>logout</vh></v>
 <v t="yen.20210606091714.2"><vh>hello (fossilapp.py)</vh></v>
 <v t="yen.20210606092715.1"><vh>form</vh></v>
+<v t="leo.20211229205142.1"><vh>form2</vh></v>
 <v t="yen.20210606092616.1"><vh>genAccount</vh></v>
 </v>
 <v t="yen.20210606091717.1"><vh>@clean wsgi.py</vh>
@@ -124,6 +125,23 @@ fossilapp 網際程式執行 URL: 例如: https://c1.kmol.info:9443, 以及執�
 sudo pip3 install leo
 
 安裝結束後, 以 leo&amp; 啟動.</t>
+<t tx="leo.20211229205142.1">@app.route('/form2')
+@login_required
+def form2():
+    """Create form routine to replace existed repository"""
+    
+    # get user student number from session
+    loginUser = session.get('user')
+    
+    output = "&lt;html&gt;&lt;body&gt;&lt;h1&gt;Recreate Fossil SCM Repository&lt;/h1&gt;&lt;form method='post' action='genAccount'&gt;"
+    output += "Notice!! Your previous repository will be replaced! Please set the password for your new Fossil SCM repository: "
+    output += loginUser + "&lt;br \&gt;&lt;br \&gt;"
+    output += "&lt;input type='hidden' name='replaced' value='yes'&gt;"
+    output += "Password:&lt;input type='password' name='password'&gt;&lt;br \&gt;&lt;br \&gt; "
+    output += "Retype Password:&lt;input type='password' name='password2'&gt;&lt;br \&gt;&lt;br \&gt; "
+    output += "&lt;input type='submit' value='Create Repository'&gt;&lt;/form&gt;&lt;/section&gt;&lt;/div&gt;&lt;/body&gt;&lt;/html&gt;"
+    
+    return output</t>
 <t tx="yen.20210606091602.2">@others
 if __name__ == "__main__":
     app.run(host='0.0.0.0')
@@ -309,6 +327,10 @@ def genAccount():
     account = loginUser
     password = request.form["password"]
     password2 = request.form["password2"]
+    try:
+        replaced = request.form["replaced"]
+    except:
+        replaced = "No"
     
     # Check if two password matched
     if password != password2:
@@ -358,11 +380,15 @@ def genAccount():
     os.system("cd " + path)
     
     # execute command1
+    # check if repository exist
+    if replaced != "yes":
+        if os.path.exists(path + account + ".fossil"):
+            return "Error! 倉儲已經存在! &lt;br /&gt;&lt;br /&gt; 假如要取代先前的倉儲, 請前往&lt;a href='/form2'&gt;建立新倉儲&lt;/a&gt;&lt;br /&gt;"
     try:
         os.system(command1)
         output += "command1 completed &lt;br /&gt;"
     except:
-        return "Error! 倉儲已經存在! &lt;br /&gt;"
+        return "Error! can not create repository! &lt;br /&gt;"
         
     
     # wait for 0.1 second
