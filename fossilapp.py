@@ -23,6 +23,9 @@ from mako.lookup import TemplateLookup
 # for login_required
 from functools import wraps
 
+# all setup in config.py
+import config
+
 # Instantiate Authomatic.
 # generate secret string randomly
 secret = os.urandom(24).hex()
@@ -96,15 +99,15 @@ def login(provider_name):
         #if loginUser in kmoler:
         
         # only @gm.nfu.edu.tw can login
-        #if loginDomain == "gm.nfu.edu.tw":
-        session["user"] = loginUser
-        session["login"] = True
-        template_lookup = TemplateLookup(directories=[template_root_dir])
-        loginTemplate = template_lookup.get_template("login.html")
-
-        return loginTemplate.render(result=result, CALLBACK_URL=CALLBACK_URL)
-        #else:
-            #return "Sorry, you are not allowed to login."
+        if loginDomain == "gm.nfu.edu.tw":
+            session["user"] = loginUser
+            session["login"] = True
+            template_lookup = TemplateLookup(directories=[template_root_dir])
+            loginTemplate = template_lookup.get_template("login.html")
+    
+            return loginTemplate.render(result=result, CALLBACK_URL=CALLBACK_URL)
+        else:
+            return "Sorry, you are not allowed to login."
 
     # Don't forget to return the response.
     return response
@@ -172,37 +175,39 @@ def genAccount():
             return "No special characters allowed for Password!"
     
     # repository location path
-    path = "/home/yen/repository/u/"
+    #path = "/home/yen/repository/u/"
+    #path = "C:/pj2022/multi_repo/"
+    path = config.repo_path
     
     output = ""
     
     # copy fossil repository from template.fossil
-    command1 = "cp " + path + "template.fossil "  + path + account + ".fossil"
-    
+    command1 = "copy " + path + config.template_repo + ".fossil "  + path + account + ".fossil"
     output += command1 + "<br />"
     
     # add account as the repository user which need to force user use student number as account
-    command2 = "fossil user new " + account + " " + account + "@gm.nfu.edu.tw " + password + " -R " + path + account + ".fossil"
-    
+    command2 = config.fossil_command + " user new " + account + " " + account + "@gm.nfu.edu.tw " + password + " -R " + path + account + ".fossil"
     output += command2 + "<br />"
     
     # set account to be administrator which capability is "s" (setup)
-    command3 = "fossil user capabilities " + account + " s"  + " -R " + path + account + ".fossil"
-    
+    command3 = config.fossil_command + " user capabilities " + account + " s"  + " -R " + path + account + ".fossil"
     output += command3 + "<br />"
     
     # change the origin "cd" account capabilities to none which is a vacant string " "
-    command4 = "fossil user capabilities  cd  '' "  + " -R " + path + account + ".fossil"
-    
+    command4 = config.fossil_command + " user capabilities " + config.template_account + " \" \" " + " -R " + path + account + ".fossil"
     output += command4 + "<br />"
-    
     output += "<br\><br \>"
     
     # change directory to user repository path
     os.system("cd " + path)
     
     # execute command1
-    os.system(command1)
+    try:
+        os.system(command1)
+        output += "command1 completed <br />"
+    except:
+        return "Error! 倉儲已經存在! <br />"
+        
     
     # wait for 0.1 second
     time.sleep(0.1)
@@ -236,12 +241,11 @@ def genAccount():
     
     # return command for debug
     #return output
-    
+
     return "Repository: " + account + " created!<br /><br \>" + \
-    "Link to repository: <a href='https://fossil.kmol.info/u/" +account + "'>" + \
+    "Link to repository: <a href='https://" + config.domain_name + ":" + config.fossil_port + "/" +account + "'>" + \
     account + "</a>"
 
-    
     '''
     return "account:" + account+"<br />" \
     + "password:" + password

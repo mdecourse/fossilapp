@@ -20,6 +20,7 @@
 </v>
 <v t="yen.20210607012835.1"><vh>generate self-signed certificate</vh></v>
 <v t="yen.20210607014414.1"><vh>Oauth2</vh></v>
+<v t="leo.20211229164509.1"><vh>config.py</vh></v>
 <v t="yen.20210607012905.1"><vh>oauth2 for @gm user</vh>
 <v t="yen.20210607012905.2"><vh>oauth2 使用 authomatic</vh>
 <v t="yen.20210607012905.3"><vh>google 設定</vh></v>
@@ -80,6 +81,49 @@ from waitress import serve
 serve(wsgiapp, listen='0.0.0.0:8080', url_scheme='https')
 
 same as in Ubuntu /etc/environment HTTPS=on</t>
+<t tx="leo.20211229164509.1">以下在整理 fossilapp 相關設定參數, 擬改寫時將所有設定存入 config.py, 然後導入主要程式中運用.
+
+當配置 fossilapp 網際程式時, 需要:
+
+Google oauth2 client key and secret 檔案 (必須放在倉儲以外的目錄):
+
+例如:
+
+第一列: 214-this_is_key.apps.googleusercontent.com
+
+第二列: this_is_secret-pktheSAqSunfu
+
+Fossil SCM server domain name: 例如: c11.cycu.org
+
+Fossil SCM server repository path: 例如: c:/pj2022/multi_repo/
+
+Fossil SCM server default repository: 例如: default.fossil
+
+Fossil SCM server template repository (複製用): 例如: template.fossil
+
+Fossil SCM port: 例如: 5443
+
+fossilapp port: 例如: 9443
+
+從 domain name 與 repository name 得知:
+
+Login 連結: https://c11.cycu.org:5443/default/login
+
+Menu 連結: https://c11.cycu.org:9443/menu
+
+自建 Fossil SCM 管理者帳號權限: 例如: 's'
+
+自建 Fossil SCM 倉儲存放位置: 例如: path = "c:/pj2022/multi_repo"
+
+fossilapp 網際程式執行 URL: 例如: https://c1.kmol.info:9443, 以及執行 menu 連結 https://c1.kmol.info:9443/menu (目的在帶出新建 repo 的表單).
+
+以上這些設定應該要寫入 config.py
+
+因為要改寫 fossilapp, 因此在 Ubuntu 安裝 Leo:
+
+sudo pip3 install leo
+
+安裝結束後, 以 leo&amp; 啟動.</t>
 <t tx="yen.20210606091602.2">@others
 if __name__ == "__main__":
     app.run(host='0.0.0.0')
@@ -205,6 +249,9 @@ from mako.lookup import TemplateLookup
 # for login_required
 from functools import wraps
 
+# all setup in config.py
+import config
+
 # Instantiate Authomatic.
 # generate secret string randomly
 secret = os.urandom(24).hex()
@@ -236,7 +283,7 @@ if __name__ == "__main__":
     if uwsgi:
         application = fossilapp.app
     else:
-        fossilapp.app.run(ssl_context = 'adhoc', host='140.130.17.34', port=8443)
+        fossilapp.app.run(ssl_context = 'adhoc', host='127.0.0.1', port=9443)
         
 @language python
 @tabwidth -4
@@ -284,37 +331,39 @@ def genAccount():
             return "No special characters allowed for Password!"
     
     # repository location path
-    path = "/home/yen/repository/u/"
+    #path = "/home/yen/repository/u/"
+    #path = "C:/pj2022/multi_repo/"
+    path = config.repo_path
     
     output = ""
     
     # copy fossil repository from template.fossil
-    command1 = "cp " + path + "template.fossil "  + path + account + ".fossil"
-    
+    command1 = "copy " + path + config.template_repo + ".fossil "  + path + account + ".fossil"
     output += command1 + "&lt;br /&gt;"
     
     # add account as the repository user which need to force user use student number as account
-    command2 = "fossil user new " + account + " " + account + "@gm.nfu.edu.tw " + password + " -R " + path + account + ".fossil"
-    
+    command2 = config.fossil_command + " user new " + account + " " + account + "@gm.nfu.edu.tw " + password + " -R " + path + account + ".fossil"
     output += command2 + "&lt;br /&gt;"
     
     # set account to be administrator which capability is "s" (setup)
-    command3 = "fossil user capabilities " + account + " s"  + " -R " + path + account + ".fossil"
-    
+    command3 = config.fossil_command + " user capabilities " + account + " s"  + " -R " + path + account + ".fossil"
     output += command3 + "&lt;br /&gt;"
     
     # change the origin "cd" account capabilities to none which is a vacant string " "
-    command4 = "fossil user capabilities  cd  '' "  + " -R " + path + account + ".fossil"
-    
+    command4 = config.fossil_command + " user capabilities " + config.template_account + " \" \" " + " -R " + path + account + ".fossil"
     output += command4 + "&lt;br /&gt;"
-    
     output += "&lt;br\&gt;&lt;br \&gt;"
     
     # change directory to user repository path
     os.system("cd " + path)
     
     # execute command1
-    os.system(command1)
+    try:
+        os.system(command1)
+        output += "command1 completed &lt;br /&gt;"
+    except:
+        return "Error! 倉儲已經存在! &lt;br /&gt;"
+        
     
     # wait for 0.1 second
     time.sleep(0.1)
@@ -348,12 +397,11 @@ def genAccount():
     
     # return command for debug
     #return output
-    
+
     return "Repository: " + account + " created!&lt;br /&gt;&lt;br \&gt;" + \
-    "Link to repository: &lt;a href='https://fossil.kmol.info/u/" +account + "'&gt;" + \
+    "Link to repository: &lt;a href='https://" + config.domain_name + ":" + config.fossil_port + "/" +account + "'&gt;" + \
     account + "&lt;/a&gt;"
 
-    
     '''
     return "account:" + account+"&lt;br /&gt;" \
     + "password:" + password
@@ -409,15 +457,15 @@ def login(provider_name):
         #if loginUser in kmoler:
         
         # only @gm.nfu.edu.tw can login
-        #if loginDomain == "gm.nfu.edu.tw":
-        session["user"] = loginUser
-        session["login"] = True
-        template_lookup = TemplateLookup(directories=[template_root_dir])
-        loginTemplate = template_lookup.get_template("login.html")
-
-        return loginTemplate.render(result=result, CALLBACK_URL=CALLBACK_URL)
-        #else:
-            #return "Sorry, you are not allowed to login."
+        if loginDomain == "gm.nfu.edu.tw":
+            session["user"] = loginUser
+            session["login"] = True
+            template_lookup = TemplateLookup(directories=[template_root_dir])
+            loginTemplate = template_lookup.get_template("login.html")
+    
+            return loginTemplate.render(result=result, CALLBACK_URL=CALLBACK_URL)
+        else:
+            return "Sorry, you are not allowed to login."
 
     # Don't forget to return the response.
     return response

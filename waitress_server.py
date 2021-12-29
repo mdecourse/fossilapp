@@ -5,4 +5,4 @@ from waitress import serve
 import fossilapp
 
 # run cmsimde dynamic site with production waitress
-serve(fossilapp.app, host='0.0.0.0', port=5000, url_scheme='https')
+serve(fossilapp.app, host='127.0.0.1', port=5001, url_scheme='https')

@@ -11,5 +11,5 @@ if __name__ == "__main__":
     if uwsgi:
         application = fossilapp.app
     else:
-        fossilapp.app.run(ssl_context = 'adhoc', host='140.130.17.34', port=8443)
+        fossilapp.app.run(ssl_context = 'adhoc', host='127.0.0.1', port=9443)
         
